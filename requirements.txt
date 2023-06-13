@@ -1,0 +1,8 @@
+thrift==0.16.0
+grpcio==1.54.0
+protobuf==4.23.0
+confluent-kafka==2.1.1
+redis==4.5.5
+setuptools-rust
+setuptools
+wheel

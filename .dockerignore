@@ -1,0 +1,13 @@
+.pytest_cache
+.dockerignore
+.git
+.idea
+.venv
+Dockerfile*
+.vscode
+**/target
+*.tar
+.DS_Store
+*.egg-info
+*.so
+__pycache__

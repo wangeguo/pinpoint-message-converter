@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pinpoint-message-converter
+spec:
+  selector:
+    matchLabels:
+      app: pinpoint-message-converter
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: pinpoint-message-converter
+    spec:
+      containers:
+      - name: pinpoint-message-converter
+        image: pinpoint-message-converter:1.0.0
+        imagePullPolicy: Never
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "localhost:9092"
+        - name: KAFKA_TOPICS
+          value: "SpanTopic"
+        - name: KAFKA_GROUP_ID
+          value: "pinpoint-message-convertor"
+        - name: KAFKA_CONSUMER_OFFSET_RESET
+          value: "latest"
+
+        # Redis environment variables
+        - name: REDIS_HOST
+          value: "localhost"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_PASSWORD
+          value: ""
+        - name: REDIS_DB
+          value: "0"
+
+        # GRPC environment variables
+        - name: GRPC_SERVER_ADDRESS
+          value: "localhost:9991"
