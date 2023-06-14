@@ -38,6 +38,34 @@ def print_messages():
     with open('./pinpoint-topic.msg', 'rb') as f:
         for line in f:
             if line.startswith(b'topic=SpanTopic |'):
-                message = line[len(b'topic=SpanTopic |'):]
-                if message[3] == 70:
-                    print("message: " + str(message))
+                try:
+                    message = line[len(b'topic=SpanTopic |'):]
+                    if message[3] == 70:
+                        print("message: " + str(message))
+                except:
+                    print("error")
+                    continue
+
+
+def test_batch_send_message():
+    redis = Redis(host=REDIS_SERVER_ADDRESS, port=6379, db=0)
+
+    # Create gRPC channel with gRPC server address
+    channel = grpc.insecure_channel(GRPC_SERVER_ADDRESS)
+    stub = rpc.SpanStub(channel)
+
+    with open('./pinpoint-topic.msg', 'rb') as f:
+        # count = 0
+        for line in f:
+            # if count >= 100:
+            #     break
+
+            # count += 1
+            if line.startswith(b'topic=SpanTopic |'):
+
+                try:
+                    message = line[len(b'topic=SpanTopic |'):]
+                    handle(stub, redis, message) == "OK"
+                except Exception as e:
+                    print("error: {} {}".format(type(e), str(e)))
+                    continue

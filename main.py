@@ -33,7 +33,7 @@ def handle(stub: rpc.SpanStub, redis: Redis, message: bytes):
     metadata = (('applicationname', application_name),
                 ('x-b3-traceid', trace_id))
 
-    stub.SendSpan.with_call(protobuf_struct, metadata=metadata)
+    stub.SendSpan.with_call(iter([protobuf_struct]), metadata=metadata)
 
     return "OK"
 
@@ -76,7 +76,11 @@ def main():
                     print("Consumer error: {}".format(message.error()))
                     continue
 
-            handle(stub, redis, message.value())
+            try:
+                handle(stub, redis, message.value())
+            except Exception as e:
+                print("Handle error: {} {}".format(type(e), str(e)))
+                continue
     except Exception as e:
         consumer.close()
         redis.close()

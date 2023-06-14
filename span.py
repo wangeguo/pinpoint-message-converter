@@ -48,4 +48,4 @@ def encode(input: TSpan) -> PSpanMessage:
     if input.loggingTransactionInfo is not None:
         span.loggingTransactionInfo = input.loggingTransactionInfo
 
-    yield PSpanMessage(span=span)
+    return PSpanMessage(span=span)

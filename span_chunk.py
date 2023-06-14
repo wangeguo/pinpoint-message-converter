@@ -37,7 +37,7 @@ def encode(input: TSpanChunk) -> PSpanMessage:
 
     # chunk.localAsyncId = input.localAsyncId
 
-    yield PSpanMessage(spanChunk=chunk)
+    return PSpanMessage(spanChunk=chunk)
 
 # covert TSpanEvent to PSpanEvent
 def convert_span_event(input: TSpanEvent) -> PSpanEvent:
