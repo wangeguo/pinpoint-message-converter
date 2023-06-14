@@ -1,8 +1,8 @@
-
 import grpc
 from redis import Redis
 from main import handle
 import pinpoint.protobuf.Service_pb2_grpc as rpc
+import traceback
 
 GRPC_SERVER_ADDRESS = '127.0.0.1:9991'
 REDIS_SERVER_ADDRESS = '127.0.0.1'
@@ -28,24 +28,28 @@ def test_send_span_chunk():
     message = b"\xef\x10\x00F\x18*mesos-374b3b23-a493-4be1-b94d-9416b0ee6e3d\x18\x06cbpt-1\x16\xb8\x9b\x94\xc3\xe1a\x14\xe4\x0f\x18\x12\x00\x0ccbpt-1\xdc\x8d\xca\xe1\xf00\x01\x93\x97\x08\x18 e246fc1cfb4c428eb744a76cf996d10c&\x9a\xf3\xdf\xe0\x8b\xcf\xaa\x8e2\x18\x1210.186.68.64:31001\x19\xfc\x14\x85\xf0\x03\x15r\x15\x02$\x9eO5\x14\xa5\xa9\xac\xab\x9d\x0b\x00\x85\xee\x03\x15r\x15\x02$\x9eO5\x12\xa5\x93\xa3\xd5\xf9\x0f\x00\x85\xfe\x03\x15v4\xfa#\x18\x1029.23.122.1:1521%\x1cX\x04ffdbU\xa0\x87\xa7\xdb\x0e\xfc\x18'jdbc:oracle:thin:@29.23.122.1:1521:ffdb\x18\x06ORACLE\x18\x04ffdb8(1f574af74e3acc575f29301360a43dfc75b3b214\x18\x0f999999,999999,2\x18\x12110227199106171607(/oracle.jdbc.driver.OracleResultSetImpl@1e55e084&\xf6\x9c\xbd\xe5\xe4a\x16\x00\x00\x00\x85\xfc\x03\x15t\x15\x02$\x9eO5\x1a\xa5\xa9\xac\xab\x9d\x0b\x00\x85\x82\x04\x15x4\xfa#\x18\x1029.23.122.1:1521%\x1cX\x04ffdbU\xa0\x87\xa7\xdb\x0e\xfc\x18'jdbc:oracle:thin:@29.23.122.1:1521:ffdb\x18\x06ORACLE\x18\x04ffdb8(42113a84e3182c3ff148949b168f43e2a75e9c95\x18\x0f999999,999999,2\x18\x12110227199106171607(/oracle.jdbc.driver.OracleResultSetImpl@7317c53c&\xf8\x9c\xbd\xe5\xe4a\x16\x00\x00\x00\x85\x80\x04\x15v\x15\x02$\x9eO5\x1a\xa5\xa9\xac\xab\x9d\x0b\x00\x85\xfa\x03\x15t\x15\x04$\x9eO5\x18\xa5\x84\x9a\xe9\xa2\x02\x00\x85\x88\x04\x15z4\xfa#\x18\x1029.23.122.1:1521%\x1cX\x04ffdbU\xa0\x87\xa7\xdb\x0e\xfc\x18'jdbc:oracle:thin:@29.23.122.1:1521:ffdb\x18\x06ORACLE\x18\x04ffdb8(d8601497ea3642ec76811b42893250d2ead331b9\x18\x012\x18\x12110227199106171607(/oracle.jdbc.driver.OracleResultSetImpl@7f3b5d77&\xfa\x9c\xbd\xe5\xe4a\x16\x00\x00\x00\x85\x86\x04\x15x\x15\x04$\x9eO5\x1a\xa5\xa9\xac\xab\x9d\x0b\x00\x85\x84\x04\x15x\x15\x04$\x9eO5\x18\xa5\xb9\x92\x9c\xa3\x03\x00\x85\xf8\x03\x15t\x15\x08$\x9eO5\x16\xa5\x84\xee\xbd\xe1\x0e\x00\x85\x90\x04\x15|\x15\x02$\xfa#\x18\x1029.23.122.1:1521%\x1cX\x04ffdbU\xa0\x87\xa7\xdb\x0e\xfc\x18'jdbc:oracle:thin:@29.23.122.1:1521:ffdb\x18\x06ORACLE\x18\x04ffdb8(1f574af74e3acc575f29301360a43dfc75b3b214\x18\x0f999999,999999,2\x18\x0f110227910617160(/oracle.jdbc.driver.OracleResultSetImpl@14249c55&\xfc\x9c\xbd\xe5\xe4a\x16\x02\x00\x00\x85\x8e\x04\x15|\x15\x02$\x9eO5\x1a\xa5\xa9\xac\xab\x9d\x0b\x00\x85\x94\x04\x15\x80\x014\xfa#\x18\x1029.23.122.1:1521%\x1cX\x04ffdbU\xa0\x87\xa7\xdb\x0e\xfc\x18'jdbc:oracle:thin:@29.23.122.1:1521:ffdb\x18\x06ORACLE\x18\x04ffdb8(42113a84e3182c3ff148949b168f43e2a75e9c95\x18\x0f999999,999999,2\x18\x0f110227910617160(/oracle.jdbc.driver.OracleResultSetImpl@21b5ca26&\x80\x9d\xbd\xe5\xe4a\x16\x00\x00\x00\x85\x92\x04\x15~\x15\x02$\x9eO5\x1a\xa5\xa9\xac\xab\x9d\x0b\x00\x85\x8c\x04\x15|\x15\x04$\x9eO5\x18\xa5\x84\x9a\xe9\xa2\x02\x00\x85\x9a\x04\x15\x82\x014\xfa#\x18\x1029.23.122.1:1521%\x1cX\x04ffdbU\xa0\x87\xa7\xdb\x0e\xfc\x18'jdbc:oracle:thin:@29.23.122.1:1521:ffdb\x18\x06ORACLE\x18\x04ffdb8(d8601497ea3642ec76811b42893250d2ead331b9\x18\x012\x18\x0f110227910617160(/oracle.jdbc.driver.OracleResultSetImpl@7492ac27&\x82\x9d\xbd\xe5\xe4a\x16\x00\x00\x00\x85\x98\x04\x15\x80\x01\x15\x02$\x9eO5\x1a\xa5\xa9\xac\xab\x9d\x0b\x00\x85\x96\x04\x15\x80\x01\x15\x02$\x9eO5\x18\xa5\xb9\x92\x9c\xa3\x03\x00\x85\x8a\x04\x15|\x15\x06$\x9eO5\x16\xa5\x84\xee\xbd\xe1\x0e\x00\x14\xe4\x0f\x18\x06cbpt-1\x18 e246fc1cfb4c428eb744a76cf996d10c&\x9a.\x18\x17http-bio-31001-exec-725\x00\n"
     assert handle(stub, redis, message) == "OK"
 
-# The messages file format is:
-# "topic=SpanTopic |"+<binary data>\n
-# "topic=SpanTopic |"+<binary data>\n
-# the binary data may be a span or a span chunk
-# the binary data may be include \n
-# parse it and print each message
-def print_messages():
-    with open('./pinpoint-topic.msg', 'rb') as f:
-        for line in f:
-            if line.startswith(b'topic=SpanTopic |'):
-                try:
-                    message = line[len(b'topic=SpanTopic |'):]
-                    if message[3] == 70:
-                        print("message: " + str(message))
-                except:
-                    print("error")
-                    continue
+# read a line from messages file
+def read_line(f):
+    line = b""
+    delimiter = b"topic=SpanTopic |"
+    while True:
+        b = f.read(1)
+        if b == b"":
+            break
+        line += b
+        if b == b"|" and line.endswith(delimiter):
+            line = line[:-len(delimiter)]
+            if line == b"":
+                continue
+            return line
 
+def test_print_messages():
+    with open('./pinpoint-topic.msg', 'rb') as f:
+        i = 0
+        while i <= 2:
+            line = read_line(f)
+            print(str(line) + "\n---\n")
+            i += 1
 
 def test_batch_send_message():
     redis = Redis(host=REDIS_SERVER_ADDRESS, port=6379, db=0)
@@ -55,17 +59,14 @@ def test_batch_send_message():
     stub = rpc.SpanStub(channel)
 
     with open('./pinpoint-topic.msg', 'rb') as f:
-        # count = 0
-        for line in f:
-            # if count >= 100:
-            #     break
-
-            # count += 1
-            if line.startswith(b'topic=SpanTopic |'):
-
-                try:
-                    message = line[len(b'topic=SpanTopic |'):]
-                    handle(stub, redis, message) == "OK"
-                except Exception as e:
-                    print("error: {} {}".format(type(e), str(e)))
-                    continue
+        i = 0
+        while i <= 10:
+            message = read_line(f)
+            try:
+                handle(stub, redis, message) == "OK"
+            except Exception as e:
+                print("error: {} {}".format(type(e), str(e)))
+                traceback.print_exc()
+                # print("message: " + str(message))
+                continue
+            i += 1

@@ -2,37 +2,26 @@
 
 import os
 import grpc
-from parse import parse;
+from parse import meta, parse;
 import pinpoint.protobuf.Service_pb2_grpc as rpc
 from confluent_kafka import Consumer, KafkaError
 from pinpoint_parser import xid
 from utils import extract_trace_id
 from redis import Redis
+import traceback
 
-# Parse message, parse message body to thrift struct, convert to protobuf struct, and send to DataKit Pinpoint Collector
+# Parse message, parse message body to thrift struct, convert to protobuf struct,
+# and send to DataKit Pinpoint Collector
 def handle(stub: rpc.SpanStub, redis: Redis, message: bytes):
+    # Check message header and parse message body to thrift struct,
+    # convert to protobuf struct. If message is valid.
     thrift_struct, protobuf_struct = parse(message)
 
-    trace_id = None
-    tid = xid(thrift_struct.transactionId, thrift_struct.appId, thrift_struct.agentId)
-    # Extract X-B3-TraceId from http request header
-    if hasattr(thrift_struct, 'httpRequestHeader')  \
-        and thrift_struct.httpRequestHeader is not None:
-        trace_id = extract_trace_id(thrift_struct.httpRequestHeader)
-        if trace_id is not None:
-            redis.set(tid, trace_id)
-    else:
-        # Get previous X-B3-TraceId from redis by transaction id
-        cached_trace_id = redis.get(tid)
-        if cached_trace_id is not None:
-            trace_id = cached_trace_id
+    # Extract X-B3-TraceId from http request header if message is Span, and set it to redis.
+    # Get previous X-B3-TraceId from redis by transaction id if message is SpanChunk.
+    metadata = meta(thrift_struct, redis)
 
-    if thrift_struct.applicationName is not None:
-        application_name = thrift_struct.applicationName
-
-    metadata = (('applicationname', application_name),
-                ('x-b3-traceid', trace_id))
-
+    # Send protobuf struct to DataKit Pinpoint Collector
     stub.SendSpan.with_call(iter([protobuf_struct]), metadata=metadata)
 
     return "OK"
@@ -80,12 +69,14 @@ def main():
                 handle(stub, redis, message.value())
             except Exception as e:
                 print("Handle error: {} {}".format(type(e), str(e)))
+                traceback.print_exc()
                 continue
     except Exception as e:
         consumer.close()
         redis.close()
         channel.close()
         print("Error: {}".format(str(e)))
+        traceback.print_exc()
 
 # Run main function in loop to prevent process exit
 if __name__ == '__main__':

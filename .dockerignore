@@ -11,3 +11,4 @@ Dockerfile*
 *.egg-info
 *.so
 __pycache__
+pinpoint-topic.msg

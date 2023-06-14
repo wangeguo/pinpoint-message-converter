@@ -33,7 +33,7 @@ RUN cd pinpoint_parser && \
 FROM python:3.10-slim
 
 RUN apt-get update
-RUN apt-get install -y vim-tiny
+RUN apt-get install -y vim
 
 WORKDIR /app
 COPY . .
