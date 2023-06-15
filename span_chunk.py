@@ -21,7 +21,8 @@ def decode(message: bytes) -> TSpanChunk:
 def encode(input: TSpanChunk) -> PSpanMessage:
     chunk = PSpanChunk()
 
-    chunk.applicationServiceType = input.applicationServiceType
+    if input.applicationServiceType is not None:
+        chunk.applicationServiceType = input.applicationServiceType
     if input.endPoint is not None:
         chunk.endPoint = input.endPoint
 

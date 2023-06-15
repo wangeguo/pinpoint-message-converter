@@ -23,32 +23,41 @@ def encode(input: TSpan) -> PSpanMessage:
     if input.endPoint is not None:
         span.acceptEvent.endPoint = str(input.endPoint)
 
-    span.acceptEvent.parentInfo.acceptorHost = str(input.acceptorHost)
-    span.acceptEvent.parentInfo.parentApplicationName = str(input.parentApplicationName)
+    if input.acceptorHost is not None:
+        span.acceptEvent.parentInfo.acceptorHost = str(input.acceptorHost)
+    if input.parentApplicationName is not None:
+        span.acceptEvent.parentInfo.parentApplicationName = str(input.parentApplicationName)
     if input.parentApplicationType is not None:
         span.acceptEvent.parentInfo.parentApplicationType = input.parentApplicationType
-    span.acceptEvent.remoteAddr = input.remoteAddr
-    span.acceptEvent.rpc = input.rpc
+    if input.remoteAddr is not None:
+        span.acceptEvent.remoteAddr = str(input.remoteAddr)
+    if input.rpc is not None:
+        span.acceptEvent.rpc = str(input.rpc)
 
     # TODO: set annotation from annotation list of input
     # annotation: _containers.RepeatedCompositeFieldContainer[_Annotation_pb2.PAnnotation]
 
-    span.apiId = input.apiId
-    span.applicationServiceType = input.applicationServiceType
-    span.elapsed = input.elapsed
+    if input.apiId is not None:
+        span.apiId = input.apiId
+    if input.applicationServiceType is not None:
+        span.applicationServiceType = int(input.applicationServiceType)
+    if input.elapsed is not None:
+        span.elapsed = int(input.elapsed)
     if input.err is not None:
         span.err = int(input.err)
     if input.exceptionInfo is not None:
         if input.exceptionInfo.intValue is not None:
             span.exceptionInfo.intValue = int(input.exceptionInfo.intValue)
         if input.exceptionInfo.stringValue is not None:
-            span.exceptionInfo.stringValue = str(input.exceptionInfo.stringValue)
-    span.flag = input.flag
+            span.exceptionInfo.stringValue.value = str(input.exceptionInfo.stringValue)
+    if input.flags is not None:
+        span.flag = input.flag
 
     if input.loggingTransactionInfo is not None:
         span.loggingTransactionInfo = input.loggingTransactionInfo
     span.parentSpanId = input.parentSpanId
-    span.serviceType = input.serviceType
+    if input.serviceType is not None:
+        span.serviceType = int(input.serviceType)
 
     # set span event from span event list of input
     if input.spanEventList is not None:
@@ -78,25 +87,34 @@ def convert_span_event(input: TSpanEvent) -> PSpanEvent:
 
     # TODO: annotation: _containers.RepeatedCompositeFieldContainer[_Annotation_pb2.PAnnotation]
 
-    event.apiId = input.apiId
+    if input.apiId is not None:
+        event.apiId = int(input.apiId)
 
     # TODO: asyncEvent: int
 
-    event.depth = input.depth
-    event.endElapsed = input.endElapsed
+    if input.depth is not None:
+        event.depth = input.depth
+    if input.endElapsed is not None:
+        event.endElapsed = input.endElapsed
 
     if input.exceptionInfo is not None:
         if input.exceptionInfo.intValue is not None:
             event.exceptionInfo.intValue = int(input.exceptionInfo.intValue)
         if input.exceptionInfo.stringValue is not None:
-            event.exceptionInfo.stringValue = str(input.exceptionInfo.stringValue)
+            event.exceptionInfo.stringValue.value = str(input.exceptionInfo.stringValue)
 
-    event.nextEvent.messageEvent.destinationId = str(input.destinationId)
-    event.nextEvent.messageEvent.endPoint = str(input.endPoint)
-    event.nextEvent.messageEvent.nextSpanId = int(input.nextSpanId)
+    if input.destinationId is not None:
+        event.nextEvent.messageEvent.destinationId = str(input.destinationId)
+    if input.endPoint is not None:
+        event.nextEvent.messageEvent.endPoint = str(input.endPoint)
+    if input.nextSpanId is not None:
+        event.nextEvent.messageEvent.nextSpanId = int(input.nextSpanId)
 
-    event.sequence = input.sequence
-    event.serviceType = input.serviceType
-    event.startElapsed = input.startElapsed
+    if input.sequence is not None:
+        event.sequence = input.sequence
+    if input.serviceType is not None:
+        event.serviceType = input.serviceType
+    if input.startElapsed is not None:
+        event.startElapsed = input.startElapsed
 
     return event

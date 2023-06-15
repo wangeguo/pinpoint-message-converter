@@ -67,13 +67,13 @@ def main():
             try:
                 handle(stub, redis, message.value())
             except Exception as e:
-                logging.error("Handle error: {} {}\n{}".format(type(e), str(e), traceback.format_exc()))
+                logging.error("Handle error: {} {} {}".format(type(e), str(e), traceback.format_exc()))
                 continue
     except Exception as e:
         consumer.close()
         redis.close()
         channel.close()
-        logging.error("Error: {}\n{}".format(str(e), traceback.format_exc()))
+        logging.error("Error: {} {}".format(str(e), traceback.format_exc()))
 
 # Run main function in loop to prevent process exit
 if __name__ == '__main__':
