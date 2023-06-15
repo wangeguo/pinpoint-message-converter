@@ -50,7 +50,7 @@ def encode(input: TSpan) -> PSpanMessage:
             span.exceptionInfo.intValue = int(input.exceptionInfo.intValue)
         if input.exceptionInfo.stringValue is not None:
             span.exceptionInfo.stringValue.value = str(input.exceptionInfo.stringValue)
-    if input.flags is not None:
+    if input.flag is not None:
         span.flag = input.flag
 
     if input.loggingTransactionInfo is not None:
