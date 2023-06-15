@@ -20,7 +20,8 @@ def decode(message: bytes) -> TSpan:
 def encode(input: TSpan) -> PSpanMessage:
     span = PSpan()
 
-    span.acceptEvent.endPoint = input.endPoint
+    if input.endPoint is not None:
+        span.acceptEvent.endPoint = str(input.endPoint)
 
     span.acceptEvent.parentInfo.acceptorHost = str(input.acceptorHost)
     span.acceptEvent.parentInfo.parentApplicationName = str(input.parentApplicationName)
@@ -38,8 +39,10 @@ def encode(input: TSpan) -> PSpanMessage:
     if input.err is not None:
         span.err = int(input.err)
     if input.exceptionInfo is not None:
-        span.exceptionInfo.intValue = input.exceptionInfo.intValue
-        span.exceptionInfo.stringValue = input.exceptionInfo.stringValue
+        if input.exceptionInfo.intValue is not None:
+            span.exceptionInfo.intValue = int(input.exceptionInfo.intValue)
+        if input.exceptionInfo.stringValue is not None:
+            span.exceptionInfo.stringValue = str(input.exceptionInfo.stringValue)
     span.flag = input.flag
 
     if input.loggingTransactionInfo is not None:
@@ -48,9 +51,10 @@ def encode(input: TSpan) -> PSpanMessage:
     span.serviceType = input.serviceType
 
     # set span event from span event list of input
-    for t_span_event in input.spanEventList:
-        p_span_event = convert_span_event(t_span_event)
-        span.spanEvent.append(p_span_event)
+    if input.spanEventList is not None:
+        for t_span_event in input.spanEventList:
+            p_span_event = convert_span_event(t_span_event)
+            span.spanEvent.append(p_span_event)
 
     span.spanId = input.spanId
 
@@ -82,8 +86,10 @@ def convert_span_event(input: TSpanEvent) -> PSpanEvent:
     event.endElapsed = input.endElapsed
 
     if input.exceptionInfo is not None:
-        event.exceptionInfo.intValue = input.exceptionInfo.intValue
-        event.exceptionInfo.stringValue = input.exceptionInfo.stringValue
+        if input.exceptionInfo.intValue is not None:
+            event.exceptionInfo.intValue = int(input.exceptionInfo.intValue)
+        if input.exceptionInfo.stringValue is not None:
+            event.exceptionInfo.stringValue = str(input.exceptionInfo.stringValue)
 
     event.nextEvent.messageEvent.destinationId = str(input.destinationId)
     event.nextEvent.messageEvent.endPoint = str(input.endPoint)

@@ -22,7 +22,8 @@ def encode(input: TSpanChunk) -> PSpanMessage:
     chunk = PSpanChunk()
 
     chunk.applicationServiceType = input.applicationServiceType
-    chunk.endPoint = input.endPoint
+    if input.endPoint is not None:
+        chunk.endPoint = input.endPoint
 
     # FIXME: Using real key time on production environment
     chunk.keyTime = input.agentStartTime
@@ -31,9 +32,10 @@ def encode(input: TSpanChunk) -> PSpanMessage:
     # TODO: localAsyncId: PLocalAsyncId
 
     # set span event from span event list of input
-    for t_span_event in input.spanEventList:
-        p_span_event = convert_span_event(t_span_event)
-        chunk.spanEvent.append(p_span_event)
+    if input.spanEventList is not None:
+        for t_span_event in input.spanEventList:
+            p_span_event = convert_span_event(t_span_event)
+            chunk.spanEvent.append(p_span_event)
 
     chunk.spanId = input.spanId
 

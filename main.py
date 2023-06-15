@@ -5,10 +5,9 @@ import grpc
 from parse import meta, parse;
 import pinpoint.protobuf.Service_pb2_grpc as rpc
 from confluent_kafka import Consumer, KafkaError
-from pinpoint_parser import xid
-from utils import extract_trace_id
 from redis import Redis
 import traceback
+import logging
 
 # Parse message, parse message body to thrift struct, convert to protobuf struct,
 # and send to DataKit Pinpoint Collector
@@ -62,21 +61,19 @@ def main():
                 if message.error().code() == KafkaError._PARTITION_EOF:
                     continue
                 else:
-                    print("Consumer error: {}".format(message.error()))
+                    logging.error("Consumer error: {}".format(message.error()))
                     continue
 
             try:
                 handle(stub, redis, message.value())
             except Exception as e:
-                print("Handle error: {} {}".format(type(e), str(e)))
-                traceback.print_exc()
+                logging.error("Handle error: {} {}\n{}".format(type(e), str(e), traceback.format_exc()))
                 continue
     except Exception as e:
         consumer.close()
         redis.close()
         channel.close()
-        print("Error: {}".format(str(e)))
-        traceback.print_exc()
+        logging.error("Error: {}\n{}".format(str(e), traceback.format_exc()))
 
 # Run main function in loop to prevent process exit
 if __name__ == '__main__':
