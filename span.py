@@ -1,10 +1,10 @@
-import time
-
+from typing import List
 from thrift.protocol.TCompactProtocol import TCompactProtocol
 from thrift.transport.TTransport import TMemoryBuffer
-from pinpoint.protobuf.Span_pb2 import PParentInfo, PSpan, PSpanEvent, PSpanMessage, PTransactionId
-from pinpoint.thrift.Apptrace.ttypes import TSpan, TSpanEvent
-from pinpoint_parser import xid
+from ddtrace import DDSpan
+from pinpoint.thrift.Apptrace.ttypes import TSpan
+from utils import xid
+import span_event
 
 # Decode Span from thrift message to TSpan
 def decode(message: bytes) -> TSpan:
@@ -13,108 +13,84 @@ def decode(message: bytes) -> TSpan:
     span = TSpan()
     span.read(Protocol)
 
-    # print(span)
     return span
 
-# Encode TSpan to Protobuf message
-def encode(input: TSpan) -> PSpanMessage:
-    span = PSpan()
+# Encode TSpan to DDSpan
+#
+# TSpan:
+# - agentId
+# - applicationName
+# - agentStartTime
+# - transactionId
+# - appkey
+# - spanId
+# - parentSpanId
+# - startTime
+# - elapsed
+# - rpc
+# - serviceType
+# - endPoint
+# - remoteAddr
+# - annotations
+# - flag
+# - err
+# - spanEventList
+# - parentApplicationName
+# - parentApplicationType
+# - acceptorHost
+# - apiId
+# - exceptionInfo
+# - applicationServiceType
+# - loggingTransactionInfo
+# - httpPara
+# - httpMethod
+# - httpRequestHeader
+# - httpRequestUserAgent
+# - httpRequestBody
+# - httpResponseBody
+# - retcode
+# - httpRequestUID
+# - httpRequestTID
+# - pagentId
+# - apidesc
+# - httpResponseHeader
+# - userId
+# - sessionId
+# - appId
+# - tenant
+# - threadId
+# - threadName
+# - hasNextCall
 
-    if input.endPoint is not None:
-        span.acceptEvent.endPoint = str(input.endPoint)
+def encode(input: TSpan, trace_id: str) -> List[DDSpan]:
+    trace = []
+    transaction_id = xid(input)
 
-    if input.acceptorHost is not None:
-        span.acceptEvent.parentInfo.acceptorHost = str(input.acceptorHost)
-    if input.parentApplicationName is not None:
-        span.acceptEvent.parentInfo.parentApplicationName = str(input.parentApplicationName)
-    if input.parentApplicationType is not None:
-        span.acceptEvent.parentInfo.parentApplicationType = input.parentApplicationType
-    if input.remoteAddr is not None:
-        span.acceptEvent.remoteAddr = str(input.remoteAddr)
-    if input.rpc is not None:
-        span.acceptEvent.rpc = str(input.rpc)
+    root = DDSpan()
+    root.span_id = int(input.spanId)
+    root.parent_id = int(input.parentSpanId)
+    root.service = str(input.applicationName)
+    root.name = str(input.rpc)
+    root.resource = str(input.rpc)
+    root.start = int(input.startTime)
+    root.duration = int(input.elapsed)
+    root.type = str(input.serviceType)
 
-    # TODO: set annotation from annotation list of input
-    # annotation: _containers.RepeatedCompositeFieldContainer[_Annotation_pb2.PAnnotation]
+    root.meta = {}
+    for k, v in input.__dict__.items():
+        root.meta[k] = str(v)
 
-    if input.apiId is not None:
-        span.apiId = input.apiId
-    if input.applicationServiceType is not None:
-        span.applicationServiceType = int(input.applicationServiceType)
-    if input.elapsed is not None:
-        span.elapsed = int(input.elapsed)
-    if input.err is not None:
-        span.err = int(input.err)
-    if input.exceptionInfo is not None:
-        if input.exceptionInfo.intValue is not None:
-            span.exceptionInfo.intValue = int(input.exceptionInfo.intValue)
-        if input.exceptionInfo.stringValue is not None:
-            span.exceptionInfo.stringValue.value = str(input.exceptionInfo.stringValue)
-    if input.flag is not None:
-        span.flag = input.flag
+    # Overwrites
+    root.meta["trace_id"] = trace_id
+    root.meta["transactionId"] = xid(input)
+    root.meta.pop('spanEventList')
 
-    if input.loggingTransactionInfo is not None:
-        span.loggingTransactionInfo = input.loggingTransactionInfo
-    span.parentSpanId = input.parentSpanId
-    if input.serviceType is not None:
-        span.serviceType = int(input.serviceType)
+    trace.append(root)
 
-    # set span event from span event list of input
-    if input.spanEventList is not None:
-        for t_span_event in input.spanEventList:
-            p_span_event = convert_span_event(t_span_event)
-            span.spanEvent.append(p_span_event)
+    # span event list
+    parent_id = int(input.spanId)
+    for event in input.spanEventList:
+        trace.append(span_event.encode(input, event, trace_id, transaction_id, parent_id))
+        parent_id = event.spanId
 
-    span.spanId = input.spanId
-
-    # FIXME: Using real start time on production environment
-    span.startTime = input.startTime
-    # span.startTime = int(time.time() * 1000)
-
-    (_, timestamp, agent_id, sequence) = xid(input.transactionId, input.appId, input.agentId).split('^')
-    span.transactionId.agentId = agent_id
-    span.transactionId.agentStartTime = int(timestamp)
-    span.transactionId.sequence = int(sequence)
-
-    # TODO: version: int
-
-    return PSpanMessage(span=span)
-
-# covert TSpanEvent to PSpanEvent
-def convert_span_event(input: TSpanEvent) -> PSpanEvent:
-    event = PSpanEvent()
-
-
-    # TODO: annotation: _containers.RepeatedCompositeFieldContainer[_Annotation_pb2.PAnnotation]
-
-    if input.apiId is not None:
-        event.apiId = int(input.apiId)
-
-    # TODO: asyncEvent: int
-
-    if input.depth is not None:
-        event.depth = input.depth
-    if input.endElapsed is not None:
-        event.endElapsed = input.endElapsed
-
-    if input.exceptionInfo is not None:
-        if input.exceptionInfo.intValue is not None:
-            event.exceptionInfo.intValue = int(input.exceptionInfo.intValue)
-        if input.exceptionInfo.stringValue is not None:
-            event.exceptionInfo.stringValue.value = str(input.exceptionInfo.stringValue)
-
-    if input.destinationId is not None:
-        event.nextEvent.messageEvent.destinationId = str(input.destinationId)
-    if input.endPoint is not None:
-        event.nextEvent.messageEvent.endPoint = str(input.endPoint)
-    if input.nextSpanId is not None:
-        event.nextEvent.messageEvent.nextSpanId = int(input.nextSpanId)
-
-    if input.sequence is not None:
-        event.sequence = input.sequence
-    if input.serviceType is not None:
-        event.serviceType = input.serviceType
-    if input.startElapsed is not None:
-        event.startElapsed = input.startElapsed
-
-    return event
+    return trace

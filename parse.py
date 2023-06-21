@@ -1,17 +1,23 @@
-from typing import Tuple
-from pinpoint.protobuf.Span_pb2 import PSpanMessage
-from pinpoint.thrift.Apptrace.ttypes import TSpan
+from typing import List, Tuple
+
+from redis import Redis
+from ddtrace import DDSpan
+from pinpoint.thrift.Apptrace.ttypes import TSpan, TSpanChunk
 import span as span
 import span_chunk as span_chunk
-from utils import extract_trace_id
-from pinpoint_parser import xid
+from utils import extract_trace_id, xid
 
-def parse_header(buf):
+# Parse the protocol code
+def code(buf: bytes) -> int:
+    # Check the protocol length must be 4
     if len(buf) != 4:
-        return 'InvalidProtocolCode'
+        raise Exception('Invalid Protocol Length')
+
+    # Check the protocol signature must be 0xEF
     signature = buf[0]
     if signature != 0xEF:
-        return 'InvalidProtocolCode'
+        raise Exception('Invalid Protocol Signature')
+
     code = 0
     if buf[2] == 0 and buf[3] == 0:
         code = 0
@@ -20,32 +26,23 @@ def parse_header(buf):
     elif buf[2] == 0 and buf[3] == 70:
         code = 70
     else:
-        return 'InvalidProtocolCode'
+        raise Exception('Invalid Protocol Code')
+
     return code
 
-# Parse and format message to thrift struct, then covert it to protobuf struct, return theme.
-def parse(message: bytes) -> Tuple[TSpan, PSpanMessage]:
-    protocol_code = parse_header(message[:4])
-    protocol_body = message[4:]
+# Parse and format message to thrift struct
+def parse(message: bytes) -> TSpan or TSpanChunk:
+    return span.decode(message[4:]) if code(message[:4]) == 40 else span_chunk.decode(message[4:])
 
-    if protocol_code == 40:
-        thrift_struct = span.decode(protocol_body)
-        protobuf_struct = span.encode(thrift_struct)
-    elif protocol_code == 70:
-        thrift_struct = span_chunk.decode(protocol_body)
-        protobuf_struct = span_chunk.encode(thrift_struct)
-    else:
-        raise Exception('InvalidProtocolCode')
-
-    return thrift_struct, protobuf_struct
-
-def meta(thrift_struct: TSpan, redis):
+# Get trace id from http request header or cache if the xid was already exists, otherwise return xid
+def get_trace_id(input: TSpan or TSpanChunk, redis: Redis):
     trace_id = None
-    tid = xid(thrift_struct.transactionId, thrift_struct.appId, thrift_struct.agentId)
+
+    tid = xid(input)
     # Extract X-B3-TraceId from http request header
-    if hasattr(thrift_struct, 'httpRequestHeader')  \
-        and thrift_struct.httpRequestHeader is not None:
-        trace_id = extract_trace_id(thrift_struct.httpRequestHeader)
+    if hasattr(input, 'httpRequestHeader')  \
+        and input.httpRequestHeader is not None:
+        trace_id = extract_trace_id(input.httpRequestHeader)
         if trace_id is not None:
             redis.set(tid, trace_id)
     else:
@@ -54,8 +51,4 @@ def meta(thrift_struct: TSpan, redis):
         if cached_trace_id is not None:
             trace_id = cached_trace_id
 
-    if thrift_struct.applicationName is not None:
-        application_name = thrift_struct.applicationName
-
-    return (('applicationname', application_name),
-                ('x-b3-traceid', trace_id))
+    return trace_id if trace_id is not None else tid

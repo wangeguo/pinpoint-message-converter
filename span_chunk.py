@@ -1,10 +1,10 @@
-import time
+from typing import List
 from thrift.protocol.TCompactProtocol import TCompactProtocol
 from thrift.transport.TTransport import TMemoryBuffer
-from pinpoint.protobuf.Span_pb2 import  PSpanChunk, PSpanMessage
+from ddtrace import DDSpan
+import span_event
 from pinpoint.thrift.Apptrace.ttypes import  TSpanChunk
-from pinpoint_parser import xid
-from span import convert_span_event
+from utils import xid
 
 # Decode Span Chunk from thrift message to TSpanChunk
 def decode(message: bytes) -> TSpanChunk:
@@ -13,38 +13,60 @@ def decode(message: bytes) -> TSpanChunk:
     chunk = TSpanChunk()
     chunk.read(Protocol)
 
-    # FIXME: Debug only
-    # print(chunk)
     return chunk
 
-# Encode TSpanChunk to Protobuf message
-def encode(input: TSpanChunk) -> PSpanMessage:
-    chunk = PSpanChunk()
+# Encode TSpanChunk to DDSpan
+#
+# TSpanChunk
+# - agentId
+# - applicationName
+# - agentStartTime
+# - serviceType
+# - transactionId
+# - appkey
+# - spanId
+# - endPoint
+# - spanEventList
+# - applicationServiceType
+# - appId
+# - tenant
+# - threadId
+# - threadName
+# - userId
+# - sessionId
+# - startTime
+def encode(input: TSpanChunk, trace_id: str) -> List[DDSpan]:
+    trace = []
+    transaction_id = xid(input)
 
-    if input.applicationServiceType is not None:
-        chunk.applicationServiceType = input.applicationServiceType
-    if input.endPoint is not None:
-        chunk.endPoint = input.endPoint
+    # root span
+    root = DDSpan()
+    root.span_id = int(input.spanId)
+    root.parent_id = 0
+    root.service = str(input.applicationName)
+    root.name = str(input.endPoint)
+    root.resource = str(input.endPoint)
+    root.start = input.startTime
+    # root.duration = int(input.elapsed)
+    root.type = str(input.serviceType)
 
-    # FIXME: Using real key time on production environment
-    chunk.keyTime = input.agentStartTime
-    # chunk.keyTime = int(time.time() * 1000)
+    root.meta = {}
+    for k, v in input.__dict__.items():
+        root.meta[k] = str(v)
 
-    # TODO: localAsyncId: PLocalAsyncId
+    # Overwrites
+    root.meta["trace_id"] = trace_id
+    root.meta["transactionId"] = transaction_id
+    root.meta.pop('spanEventList')
 
-    # set span event from span event list of input
-    if input.spanEventList is not None:
-        for t_span_event in input.spanEventList:
-            p_span_event = convert_span_event(t_span_event)
-            chunk.spanEvent.append(p_span_event)
+    trace.append(root)
 
-    chunk.spanId = input.spanId
+    # span event list
+    parent_id = int(input.spanId)
+    for event in input.spanEventList:
+        trace.append(span_event.encode(
+            input, event, trace_id, transaction_id, parent_id
+        ))
+        parent_id = event.spanId
 
-    (_, timestamp, agent_id, sequence) = xid(input.transactionId, input.appId, input.agentId).split('^')
-    chunk.transactionId.agentId = agent_id
-    chunk.transactionId.agentStartTime = int(timestamp)
-    chunk.transactionId.sequence = int(sequence)
-
-    # TODO: version: int
-
-    return PSpanMessage(spanChunk=chunk)
+    return trace

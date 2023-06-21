@@ -36,6 +36,6 @@ spec:
         - name: REDIS_DB
           value: "0"
 
-        # GRPC environment variables
-        - name: GRPC_SERVER_ADDRESS
-          value: "localhost:9991"
+        # Datakit environment variables
+        - name: DATAKIT_ADDRESS
+          value: "localhost:9529"

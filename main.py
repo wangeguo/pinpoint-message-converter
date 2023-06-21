@@ -1,29 +1,39 @@
 #!/usr/bin/python3
 
+import json
 import os
-import grpc
-from parse import meta, parse;
-import pinpoint.protobuf.Service_pb2_grpc as rpc
+from ddtrace import DDSpanEncoder
+from parse import get_trace_id, parse;
 from confluent_kafka import Consumer, KafkaError
+from pinpoint.thrift.Apptrace.ttypes import TSpan
 from redis import Redis
 import traceback
 import logging
+import requests
+import span
+import span_chunk
 
-# Parse message, parse message body to thrift struct, convert to protobuf struct,
-# and send to DataKit Pinpoint Collector
-def handle(stub: rpc.SpanStub, redis: Redis, message: bytes):
+HTTP_HEADERS = {'Content-Type': 'application/json; charset=utf-8'}
+
+# Parse message, parse message body to thrift struct, convert to JSON object,
+# and send to DataKit DDtrace Collector
+def handle(endpoint, redis: Redis, message: bytes):
     # Check message header and parse message body to thrift struct,
-    # convert to protobuf struct. If message is valid.
-    thrift_struct, protobuf_struct = parse(message)
+    # convert to JSON If message is valid.
+    struct = parse(message)
+    trace_id = get_trace_id(struct, redis)
 
-    # Extract X-B3-TraceId from http request header if message is Span, and set it to redis.
-    # Get previous X-B3-TraceId from redis by transaction id if message is SpanChunk.
-    metadata = meta(thrift_struct, redis)
+    if isinstance(struct, TSpan):
+        trace = span.encode(struct, trace_id)
+    else:
+        trace = span_chunk.encode(struct, trace_id)
 
-    # Send protobuf struct to DataKit Pinpoint Collector
-    stub.SendSpan.with_call(iter([protobuf_struct]), metadata=metadata)
+    payload = json.dumps([trace], cls=DDSpanEncoder)
 
-    return "OK"
+    # Send JSON to DataKit DDtrace Collector
+    r = requests.post(endpoint, data=payload, headers=HTTP_HEADERS)
+
+    return r
 
 def main():
     try:
@@ -46,10 +56,10 @@ def main():
         redis_db = os.getenv('REDIS_DB', 0)
         redis = Redis(host=redis_host, port=redis_port, db=redis_db, password=redis_password)
 
-        # Create gRPC channel with gRPC server address
-        grpc_server_address = os.getenv('GRPC_SERVER_ADDRESS', 'localhost:9991')
-        channel = grpc.insecure_channel(grpc_server_address)
-        stub = rpc.SpanStub(channel)
+        datakit_address = os.getenv('DATAKIT_ADDRESS', 'localhost:9529')
+
+        # localhost:9529/v0.4/traces
+        endpoint = "http://{}/v0.4/traces".format(datakit_address)
 
         # Consume Kafka message and send to DataKit Pinpoint Collector
         while True:
@@ -65,14 +75,13 @@ def main():
                     continue
 
             try:
-                handle(stub, redis, message.value())
+                handle(endpoint, redis, message.value())
             except Exception as e:
                 logging.error("Handle error: {} {} {}".format(type(e), str(e), traceback.format_exc()))
                 continue
     except Exception as e:
         consumer.close()
         redis.close()
-        channel.close()
         logging.error("Error: {} {}".format(str(e), traceback.format_exc()))
 
 # Run main function in loop to prevent process exit
