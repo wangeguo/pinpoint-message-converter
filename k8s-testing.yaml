@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: pinpoint-message-converter
-        image: pinpoint-message-converter:1.4.1
+        image: pinpoint-message-converter:2.0.0
         imagePullPolicy: Never
         env:
         - name: KAFKA_BOOTSTRAP_SERVERS

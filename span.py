@@ -33,7 +33,7 @@ def encode(input: TSpan, trace_id: str) -> List[DDSpan]:
     root.name = service_name(input.serviceType)
     root.resource = str(input.rpc)
     root.start = int(input.startTime) * 1000
-    root.duration = int(input.elapsed)
+    root.duration = int(input.elapsed) * 1000
     root.type = service_type(input.serviceType)
 
     root.meta = {}
