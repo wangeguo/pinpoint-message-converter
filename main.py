@@ -17,11 +17,11 @@ HTTP_HEADERS = {'Content-Type': 'application/json; charset=utf-8'}
 
 # Parse message, parse message body to thrift struct, convert to JSON object,
 # and send to DataKit DDtrace Collector
-def handle(endpoint, redis: Redis, message: bytes):
+def handle(ns: str, endpoint: str, redis: Redis, message: bytes):
     # Check message header and parse message body to thrift struct,
     # convert to JSON If message is valid.
     struct = parse(message)
-    trace_id = get_trace_id(struct, redis)
+    trace_id = get_trace_id(ns, struct, redis)
 
     if isinstance(struct, TSpan):
         trace = span.encode(struct, trace_id)

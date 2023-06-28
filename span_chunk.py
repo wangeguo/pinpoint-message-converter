@@ -34,39 +34,43 @@ def decode(message: bytes) -> TSpanChunk:
 # - threadName
 # - userId
 # - sessionId
-# - startTime
+# - startTime (None)
 def encode(input: TSpanChunk, trace_id: str) -> List[DDSpan]:
     trace = []
     transaction_id = xid(input)
 
-    # root span
-    root = DDSpan()
-    root.span_id = int(input.spanId)
-    root.parent_id = 0
-    root.service = str(input.applicationName)
-    root.name = str(input.endPoint)
-    root.resource = str(input.endPoint)
-    root.start = input.startTime
-    # root.duration = int(input.elapsed)
-    root.type = str(input.serviceType)
+    # # root span
+    # root = DDSpan()
+    # root.span_id = int(input.spanId)
+    # root.parent_id = 0
+    # root.service = str(input.applicationName)
+    # root.name = service_name(input.serviceType)
+    # root.resource = str(input.endPoint)
+    # root.start = int(input.agentStartTime) * 1000
+    # # root.duration = int(input.elapsed)
+    # root.type = service_type(input.serviceType)
 
-    root.meta = {}
-    for k, v in input.__dict__.items():
-        root.meta[k] = str(v)
+    # root.meta = {}
+    # for k, v in input.__dict__.items():
+    #     root.meta[k] = str(v)
 
-    # Overwrites
-    root.meta["trace_id"] = trace_id
-    root.meta["transactionId"] = transaction_id
-    root.meta.pop('spanEventList')
+    # # Overwrites
+    # root.meta["trace_id"] = trace_id
+    # root.meta["transactionId"] = transaction_id
+    # root.meta["original_type"] = "SpanChunk"
 
-    trace.append(root)
+    # # root.meta.pop('spanEventList')
+
+    # trace.append(root)
 
     # span event list
-    parent_id = int(input.spanId)
-    for event in input.spanEventList:
-        trace.append(span_event.encode(
-            input, event, trace_id, transaction_id, parent_id
-        ))
-        parent_id = event.spanId
+    if input.spanEventList is not None:
+        parent_id = abs(int(input.spanId))
+        for event in input.spanEventList:
+            span = span_event.encode(
+                input, event, trace_id, transaction_id, parent_id
+            )
+            trace.append(span)
+            parent_id = span.span_id
 
     return trace
