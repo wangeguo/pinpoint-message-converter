@@ -16,51 +16,6 @@ def decode(message: bytes) -> TSpan:
     return span
 
 # Encode TSpan to DDSpan
-#
-# TSpan:
-# - agentId
-# - applicationName
-# - agentStartTime
-# - transactionId
-# - appkey
-# - spanId
-# - parentSpanId
-# - startTime
-# - elapsed
-# - rpc
-# - serviceType
-# - endPoint
-# - remoteAddr
-# - annotations
-# - flag
-# - err
-# - spanEventList
-# - parentApplicationName
-# - parentApplicationType
-# - acceptorHost
-# - apiId
-# - exceptionInfo
-# - applicationServiceType
-# - loggingTransactionInfo
-# - httpPara
-# - httpMethod
-# - httpRequestHeader
-# - httpRequestUserAgent
-# - httpRequestBody
-# - httpResponseBody
-# - retcode
-# - httpRequestUID
-# - httpRequestTID
-# - pagentId
-# - apidesc
-# - httpResponseHeader
-# - userId
-# - sessionId
-# - appId
-# - tenant
-# - threadId
-# - threadName
-# - hasNextCall
 
 def encode(input: TSpan, trace_id: str) -> List[DDSpan]:
     trace = []

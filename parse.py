@@ -2,7 +2,7 @@ from redis import Redis
 from pinpoint.thrift.Apptrace.ttypes import TSpan, TSpanChunk
 import span as span
 import span_chunk as span_chunk
-from utils import random_id, xid
+from utils import extract_trace_id, xid
 
 # Parse the protocol code
 def code(buf: bytes) -> int:
@@ -32,23 +32,20 @@ def parse(message: bytes) -> TSpan or TSpanChunk:
     return span.decode(message[4:]) if code(message[:4]) == 40 else span_chunk.decode(message[4:])
 
 # Get trace id from http request header or cache if the xid was already exists, otherwise return xid
-def get_trace_id(ns: str, input: TSpan or TSpanChunk, redis: Redis):
+def get_trace_id(input: TSpan or TSpanChunk, redis: Redis) -> str:
     trace_id = None
-
     tid = xid(input)
 
     # Get previous X-B3-TraceId from redis by transaction id
-    cached_trace_id = redis.get(ns + "-" + tid)
+    cached_trace_id = redis.get(tid)
     if cached_trace_id is not None:
         trace_id = str(cached_trace_id)
     else:
-        # FIXME: Extract X-B3-TraceId from http request header
-        # if hasattr(input, 'httpRequestHeader')  \
-        #     and input.httpRequestHeader is not None:
-        #     trace_id = extract_trace_id(input.httpRequestHeader)
-        #     if trace_id is not None:
-        #         redis.set(tid, trace_id)
-        trace_id = str(random_id())
-        redis.set(ns + "-" + tid, trace_id)
+        # Extract X-B3-TraceId from http request header
+        if hasattr(input, 'httpRequestHeader')  \
+            and input.httpRequestHeader is not None:
+            trace_id = extract_trace_id(input.httpRequestHeader)
+            if trace_id is not None:
+                redis.set(tid, trace_id)
 
-    return trace_id if trace_id is not None else tid
+    return str(trace_id) if trace_id is not None else tid
