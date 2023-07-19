@@ -6,6 +6,7 @@ from utils import service_name, random_id, service_type
 def encode(parent: TSpan or TSpanChunk, event: TSpanEvent,
            trace_id: str, transaction_id: str, parent_id: int) -> DDSpan:
     span = DDSpan()
+    span.trace_id = 0
     span.span_id = random_id()
     span.parent_id = parent_id
     span.service = str(parent.applicationName)
@@ -27,9 +28,9 @@ def encode(parent: TSpan or TSpanChunk, event: TSpanEvent,
         span.resource = str(event.endPoint)
 
     span.start = (int(parent.agentStartTime) + int(event.startElapsed)) * 1000
-    span.duration = (int(event.startElapsed) + int(event.endElapsed)) * 1000
+    span.duration = (int(event.startElapsed) + int(event.endElapsed)) * 1000000
     if span.duration == 0:
-        span.duration = int(1 * 1000)
+        span.duration = int(1 * 1000000)
     span.type = service_type(event.serviceType)
 
     span.meta = {}

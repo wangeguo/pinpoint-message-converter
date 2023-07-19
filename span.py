@@ -22,6 +22,7 @@ def encode(input: TSpan, trace_id: str) -> List[DDSpan]:
     transaction_id = xid(input)
 
     root = DDSpan()
+    root.trace_id = 0
     root.span_id = abs(int(input.spanId))
 
     if input.parentSpanId < 0:
@@ -32,8 +33,8 @@ def encode(input: TSpan, trace_id: str) -> List[DDSpan]:
     root.service = str(input.applicationName)
     root.name = service_name(input.serviceType)
     root.resource = str(input.rpc)
-    root.start = int(input.startTime) * 1000
-    root.duration = int(input.elapsed) * 1000
+    root.start = int(input.startTime) * 1000000
+    root.duration = int(input.elapsed) * 1000000
     root.type = service_type(input.serviceType)
 
     root.meta = {}

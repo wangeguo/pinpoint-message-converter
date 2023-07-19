@@ -32,7 +32,7 @@ def parse(message: bytes) -> TSpan or TSpanChunk:
     return span.decode(message[4:]) if code(message[:4]) == 40 else span_chunk.decode(message[4:])
 
 # Get trace id from http request header or cache if the xid was already exists, otherwise return xid
-def get_trace_id(input: TSpan or TSpanChunk, redis: Redis) -> str:
+def get_trace_id(input: TSpan or TSpanChunk, redis: Redis, key: str) -> str:
     trace_id = None
     tid = xid(input)
 
@@ -41,10 +41,10 @@ def get_trace_id(input: TSpan or TSpanChunk, redis: Redis) -> str:
     if cached_trace_id is not None:
         trace_id = str(cached_trace_id)
     else:
-        # Extract X-B3-TraceId from http request header
+        # Extract custom trace id from http request header
         if hasattr(input, 'httpRequestHeader')  \
             and input.httpRequestHeader is not None:
-            trace_id = extract_trace_id(input.httpRequestHeader)
+            trace_id = extract_trace_id(input.httpRequestHeader, key)
             if trace_id is not None:
                 redis.set(tid, trace_id)
 

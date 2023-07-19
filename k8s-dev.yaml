@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: pinpoint-message-converter
-        image: pinpoint-message-converter:2.0.0
+        image: pinpoint-message-converter:2.1.0
         imagePullPolicy: Never
         env:
         - name: KAFKA_BOOTSTRAP_SERVERS
@@ -39,3 +39,8 @@ spec:
         # Datakit environment variables
         - name: DATAKIT_ADDRESS
           value: "localhost:9529"
+
+        - name: LOG_LEVEL
+          value: DEBUG
+        - name: TRACE_ID_KEY
+          value: "x-b3-traceid"

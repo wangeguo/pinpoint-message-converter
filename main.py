@@ -15,13 +15,20 @@ import span_chunk
 
 HTTP_HEADERS = {'Content-Type': 'application/json; charset=utf-8'}
 
+# Setup logging level and format
+logging.basicConfig(
+    level=os.getenv('LOG_LEVEL', 'INFO'),
+    format='%(asctime)s %(levelname)s %(message)s')
+
+TRACE_ID_KEY = os.getenv('TRACE_ID_KEY', 'x-b3-traceid')
+
 # Parse message, parse message body to thrift struct, convert to JSON object,
 # and send to DataKit DDtrace Collector
 def handle(endpoint: str, redis: Redis, message: bytes):
     # Check message header and parse message body to thrift struct,
     # convert to JSON If message is valid.
     struct = parse(message)
-    trace_id = get_trace_id(struct, redis)
+    trace_id = get_trace_id(struct, redis, TRACE_ID_KEY)
 
     if isinstance(struct, TSpan):
         trace = span.encode(struct, trace_id)
@@ -29,15 +36,18 @@ def handle(endpoint: str, redis: Redis, message: bytes):
         trace = span_chunk.encode(struct, trace_id)
 
     payload = json.dumps([trace], cls=DDSpanEncoder)
+    logging.debug("Payload: {}".format(payload))
 
     # Send JSON to DataKit DDtrace Collector
     r = requests.post(endpoint, data=payload, headers=HTTP_HEADERS)
+    logging.debug("Response: {}".format(str(r)))
 
     return r
 
 def main():
     try:
         # Create Kafka Consumer with topic and bootstrap server
+        logging.debug("Creating Kafka Consumer with topic and bootstrap server")
         kafka_bootstrap_servers = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
         kafka_group_id = os.getenv('KAFKA_GROUP_ID', 'pinpoint-message-convertor')
         kafka_consumer_offset_reset = os.getenv('KAFKA_CONSUMER_OFFSET_RESET', 'latest')
@@ -50,6 +60,7 @@ def main():
         consumer.subscribe(kafka_topics.split(','))
 
         # Create Redis client
+        logging.debug("Creating Redis client")
         redis_host = os.getenv('REDIS_HOST', 'localhost')
         redis_password = os.getenv('REDIS_PASSWORD', '')
         redis_port = os.getenv('REDIS_PORT', 6379)
