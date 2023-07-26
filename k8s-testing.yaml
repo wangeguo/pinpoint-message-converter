@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: pinpoint-message-converter
-        image: pinpoint-message-converter:2.1.0
+        image: pinpoint-message-converter:2.1.1
         imagePullPolicy: Never
         env:
         - name: KAFKA_BOOTSTRAP_SERVERS
@@ -25,6 +25,10 @@ spec:
           value: "pinpoint-message-convertor"
         - name: KAFKA_CONSUMER_OFFSET_RESET
           value: "latest"
+        - name: BROKER_VERSION
+          value: "0.9.0.1"
+        - name: API_VERSION_REQUEST
+          value: "true"
 
         # Redis environment variables
         - name: REDIS_HOST

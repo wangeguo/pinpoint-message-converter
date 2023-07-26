@@ -1,3 +1,4 @@
+import logging
 from redis import Redis
 from pinpoint.thrift.Apptrace.ttypes import TSpan, TSpanChunk
 import span as span
@@ -8,11 +9,13 @@ from utils import extract_trace_id, xid
 def code(buf: bytes) -> int:
     # Check the protocol length must be 4
     if len(buf) != 4:
+        logging.debug("Invalid Protocol Length: {}".format(len(buf)))
         raise Exception('Invalid Protocol Length')
 
     # Check the protocol signature must be 0xEF
     signature = buf[0]
     if signature != 0xEF:
+        logging.debug("Invalid Protocol Signature: {}".format(signature))
         raise Exception('Invalid Protocol Signature')
 
     code = 0
@@ -23,6 +26,7 @@ def code(buf: bytes) -> int:
     elif buf[2] == 0 and buf[3] == 70:
         code = 70
     else:
+        logging.debug("Invalid Protocol Code: {}".format(buf[3]))
         raise Exception('Invalid Protocol Code')
 
     return code

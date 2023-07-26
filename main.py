@@ -51,10 +51,22 @@ def main():
         kafka_bootstrap_servers = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
         kafka_group_id = os.getenv('KAFKA_GROUP_ID', 'pinpoint-message-convertor')
         kafka_consumer_offset_reset = os.getenv('KAFKA_CONSUMER_OFFSET_RESET', 'latest')
+
+        # When using a Kafka 0.10 broker or later you don't need to do anything
+        # (api.version.request=true is the default). If you use Kafka broker 0.9 or 0.8
+        # you must set api.version.request=false and set broker.version.fallback to
+        # your broker version, e.g broker.version.fallback=0.9.0.1.
+        broker_version = os.getenv('BROKER_VERSION', '0.9.0.1')
+        api_version_request = os.getenv('API_VERSION_REQUEST', True)
+
         consumer = Consumer({
             'bootstrap.servers': kafka_bootstrap_servers,
             'group.id': kafka_group_id,
             'auto.offset.reset': kafka_consumer_offset_reset,
+            'auto.commit.enable': True,
+            'enable.auto.commit': True,
+            'broker.version.fallback': broker_version,
+            'api.version.request': bool(api_version_request),
         })
         kafka_topics = os.getenv('KAFKA_TOPICS', 'SpanTopic')
         consumer.subscribe(kafka_topics.split(','))
@@ -85,8 +97,11 @@ def main():
                     logging.error("Consumer error: {}".format(message.error()))
                     continue
 
+            logging.debug('Received message: {}'.format(message.value()))
+
             try:
                 handle(endpoint, redis, message.value())
+                consumer.commit()
             except Exception as e:
                 logging.error("Handle error: {} {} {}".format(type(e), str(e), traceback.format_exc()))
                 continue
