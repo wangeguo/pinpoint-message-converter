@@ -1,7 +1,7 @@
 from typing import List
 from thrift.protocol.TCompactProtocol import TCompactProtocol
 from thrift.transport.TTransport import TMemoryBuffer
-from ddtrace import DDSpan
+from point import Point
 import span_event
 from pinpoint.thrift.Apptrace.ttypes import  TSpanChunk
 from utils import xid
@@ -15,20 +15,20 @@ def decode(message: bytes) -> TSpanChunk:
 
     return chunk
 
-# Encode TSpanChunk to DDSpan
-def encode(input: TSpanChunk, trace_id: str) -> List[DDSpan]:
+# Encode TSpanChunk to Point
+def encode(input: TSpanChunk, trace_id: str) -> List[Point]:
     if input.spanEventList is None:
         return []
 
-    trace = []
+    lines = []
     transaction_id = xid(input)
 
     parent_id = abs(int(input.spanId))
     for event in input.spanEventList:
-        span = span_event.encode(
+        line = span_event.encode(
             input, event, trace_id, transaction_id, parent_id
         )
-        trace.append(span)
-        parent_id = span.span_id
+        lines.append(line)
+        parent_id = line.fields.get("span_id")
 
-    return trace
+    return lines

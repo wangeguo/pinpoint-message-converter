@@ -1,5 +1,12 @@
 # Pinpoint Message Converter
 
-## Saving images as tar files for sharing
-docker save -o pinpoint-message-converter.tar pinpoint-message-converter:latest
-docker load < pinpoint-message-converter.tar
+## Build and install Wheel
+
+```
+cd pinpoint_parser/
+pip3 wheel .
+pip3 install pinpoint_parser-xxx.whl
+```
+
+Note:
+Get site-packages path: `python3 -m site`

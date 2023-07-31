@@ -11,10 +11,10 @@ def extract_trace_id(httpRequestHeader: str, key: str):
         if header.startswith(key):
             trace_id = header.split(",")[1]
             break
-    return trace_id
+    return str(trace_id)
 
 def xid(input: TSpan or TSpanChunk) -> str:
-    return pinpoint_parser.xid(input.transactionId, input.appId, input.agentId)
+    return str(pinpoint_parser.xid(input.transactionId, input.appId, input.agentId))
 
 # get service name by service type from SERVICE_TYPE
 def service_name(service_type: int) -> str:

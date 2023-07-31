@@ -43,13 +43,17 @@ def get_trace_id(input: TSpan or TSpanChunk, redis: Redis, key: str) -> str:
     # Get previous X-B3-TraceId from redis by transaction id
     cached_trace_id = redis.get(tid)
     if cached_trace_id is not None:
-        trace_id = str(cached_trace_id)
+        trace_id = str(cached_trace_id, 'utf-8')
     else:
         # Extract custom trace id from http request header
         if hasattr(input, 'httpRequestHeader')  \
             and input.httpRequestHeader is not None:
             trace_id = extract_trace_id(input.httpRequestHeader, key)
             if trace_id is not None:
-                redis.set(tid, trace_id)
+                redis.set(tid, str(trace_id))
 
-    return str(trace_id) if trace_id is not None else tid
+    return trace_id if trace_id is not None else tid
+
+# check if the message is a span or span chunk
+def is_span(instance: TSpan or TSpanChunk) -> bool:
+    return isinstance(instance, TSpan)

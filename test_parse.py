@@ -18,5 +18,5 @@ def test_encode_span():
     trace = span_encode(struct, "123")
 
     for span in trace:
-        assert span.service == struct.applicationName
-        assert span.meta.get('trace_id') == "123"
+        assert span.tags['service'] == struct.applicationName
+        assert span.fields.get('trace_id') == "123"
