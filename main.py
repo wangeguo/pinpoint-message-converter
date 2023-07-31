@@ -32,7 +32,7 @@ logging.basicConfig(
     level=os.getenv('PMV_LOG_LEVEL', 'DEBUG'),
     format='%(asctime)s %(levelname)s %(message)s')
 
-debug_mode = os.getenv('PMV_DEBUG', False)
+debug_mode = os.getenv('PMV_DEBUG', True)
 
 # Create Flask application instance
 app = Flask(__name__)
@@ -76,10 +76,10 @@ def handle():
         else:
             # parse the request data to Request object list (JSON)
             requests = json.loads(request.data, object_hook=lambda d: Request(**d))
-            for request in requests:
-                lines.extend(convert(app.redis, request.value))
+            for req in requests:
+                lines.extend(convert(app.redis, req.value))
 
-        return jsonify(lines), 200
+        return json.dumps(lines, cls=PointEncoder), 200
     except Exception as e:
         logging.error("Handle error: {} {}".format(str(e), traceback.format_exc()))
 
@@ -101,8 +101,7 @@ def convert(redis: Redis, message: bytes) -> List[Point]:
     else:
         lines = span_chunk.encode(struct, trace_id)
 
-    logging.debug('Converted lines: {}'.format(lines))
-    print(json.dumps(lines, cls=PointEncoder))
+    logging.debug(json.dumps(lines, cls=PointEncoder))
     return lines
 
 # Start PinpointMessageConverter for test.
