@@ -7,7 +7,7 @@ and converting them into line protocols and returning them.
 ## Prerequisites
 
 The Rust build environment needs to be pre-installed to compile the
-`pinpoint_parser`` module, and the project runtime dependencies.
+`pinpoint_parser` module, and the project runtime dependencies.
 
 a. Basics & Tools
 
