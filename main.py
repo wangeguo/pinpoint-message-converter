@@ -79,7 +79,11 @@ def handle():
             for req in requests:
                 lines.extend(convert(app.redis, req.value))
 
-        return json.dumps(lines, cls=PointEncoder), 200
+        response = make_response(json.dumps(lines, cls=PointEncoder), 200)
+        response.headers['Content-Type'] = 'application/json'
+        response.headers['X-category'] = 'tracing'
+
+        return response
     except Exception as e:
         logging.error("Handle error: {} {}".format(str(e), traceback.format_exc()))
 
