@@ -6,7 +6,7 @@ import traceback
 import logging
 from typing import List
 
-from flask import Flask, make_response, request, jsonify
+from flask import Flask, make_response, request
 from redis import Redis
 
 from parse import get_trace_id, is_span, parse
@@ -29,10 +29,10 @@ class DataKitFramework:
 
 # Setup logging level and format
 logging.basicConfig(
-    level=os.getenv('PMV_LOG_LEVEL', 'DEBUG'),
+    level=os.getenv('PMC_LOG_LEVEL', 'DEBUG'),
     format='%(asctime)s %(levelname)s %(message)s')
 
-debug_mode = os.getenv('PMV_DEBUG', True)
+debug_mode = os.getenv('PMC_DEBUG', True)
 
 # Create Flask application instance
 app = Flask(__name__)
@@ -46,10 +46,10 @@ class PinpointMessageConverter(DataKitFramework):
         try:
             # Setup redis client to app context
             logging.debug("Creating Redis client")
-            redis_host = os.getenv('PMV_REDIS_HOST', 'localhost')
-            redis_password = os.getenv('PMV_REDIS_PASSWORD', '')
-            redis_port = os.getenv('PMV_REDIS_PORT', 6379)
-            redis_db = os.getenv('PMV_REDIS_DB', 0)
+            redis_host = os.getenv('PMC_REDIS_HOST', 'localhost')
+            redis_password = os.getenv('PMC_REDIS_PASSWORD', '')
+            redis_port = os.getenv('PMC_REDIS_PORT', 6379)
+            redis_db = os.getenv('PMC_REDIS_DB', 0)
             redis = Redis(host=redis_host, port=redis_port,
                             db=redis_db, password=redis_password,
                             socket_connect_timeout=5, socket_timeout=5)
@@ -58,7 +58,7 @@ class PinpointMessageConverter(DataKitFramework):
                 app.redis = redis
 
             # Start flask server
-            app.run(host='0.0.0.0', port=os.getenv('PMV_PORT', 38064), debug=False)
+            app.run(host='0.0.0.0', port=os.getenv('PMC_PORT', 38064), debug=False)
         except Exception as e:
             redis.close()
             logging.error("Run error: {} {}".format(str(e), traceback.format_exc()))
@@ -93,7 +93,7 @@ def convert(redis: Redis, message: bytes) -> List[Point]:
     # Check message header and parse message body to thrift struct,
     struct = parse(message)
 
-    TRACE_ID_KEY = os.getenv('PMV_TRACE_ID_KEY', 'x-b3-traceid')
+    TRACE_ID_KEY = os.getenv('PMC_TRACE_ID_KEY', 'x-b3-traceid')
     trace_id = get_trace_id(struct, redis, TRACE_ID_KEY)
 
     if is_span(struct):
