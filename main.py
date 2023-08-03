@@ -15,17 +15,17 @@ from request import Request;
 import span
 import span_chunk
 
-#from datakit_framework import DataKitFramework
+from datakit_framework import DataKitFramework
 
 # Define a abstract class DataKitFramework for mock.
 # it's has a abstract method run() to do the real work.
 # and also has two attributes: name and interval.
-class DataKitFramework:
-    name = "DataKitFramework"
-    interval = 10
+# class DataKitFramework:
+#     name = "DataKitFramework"
+#     interval = 10
 
-    def run(self):
-        pass
+#     def run(self):
+#         pass
 
 # Setup logging level and format
 dictConfig({
