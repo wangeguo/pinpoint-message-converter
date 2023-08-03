@@ -3,7 +3,7 @@
 import json
 import os
 import traceback
-import logging
+from logging.config import dictConfig
 from typing import List
 
 from flask import Flask, make_response, request
@@ -28,9 +28,12 @@ class DataKitFramework:
         pass
 
 # Setup logging level and format
-logging.basicConfig(
-    level=os.getenv('PMC_LOG_LEVEL', 'DEBUG'),
-    format='%(asctime)s %(levelname)s %(message)s')
+dictConfig({
+    'version': 1,
+    'root': {
+        'level': os.getenv('PMC_LOG_LEVEL', 'DEBUG'),
+    }
+})
 
 debug_mode = os.getenv('PMC_DEBUG', True)
 
@@ -45,7 +48,7 @@ class PinpointMessageConverter(DataKitFramework):
     def run(self):
         try:
             # Setup redis client to app context
-            logging.debug("Creating Redis client")
+            app.logger.debug("Creating Redis client")
             redis_host = os.getenv('PMC_REDIS_HOST', 'localhost')
             redis_password = os.getenv('PMC_REDIS_PASSWORD', '')
             redis_port = os.getenv('PMC_REDIS_PORT', 6379)
@@ -61,7 +64,7 @@ class PinpointMessageConverter(DataKitFramework):
             app.run(host='0.0.0.0', port=os.getenv('PMC_PORT', 38064), debug=False)
         except Exception as e:
             redis.close()
-            logging.error("Run error: {} {}".format(str(e), traceback.format_exc()))
+            app.logger.error("Run error: {} {}".format(str(e), traceback.format_exc()))
 
 # Handle http request
 @app.route("/", methods=['POST'])
@@ -85,14 +88,14 @@ def handle():
 
         return response
     except Exception as e:
-        logging.error("Handle error: {} {}".format(str(e), traceback.format_exc()))
+        app.logger.error("Handle error: {} {}".format(str(e), traceback.format_exc()))
 
     return make_response('', 200)
 
 # Parse message, parse message body to thrift struct,
 # convert to JSON object and return as line protocol.
 def convert(redis: Redis, message: bytes) -> List[Point]:
-    logging.debug('Received message: {}'.format(message))
+    app.logger.debug('Received message: {}'.format(message))
 
     # Check message header and parse message body to thrift struct,
     struct = parse(message)
@@ -105,7 +108,7 @@ def convert(redis: Redis, message: bytes) -> List[Point]:
     else:
         lines = span_chunk.encode(struct, trace_id)
 
-    logging.debug(json.dumps(lines, cls=PointEncoder))
+    app.logger.debug(json.dumps(lines, cls=PointEncoder))
     return lines
 
 # Start PinpointMessageConverter for test.
