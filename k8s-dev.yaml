@@ -1,0 +1,78 @@
+# namespace: pmc
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pmc
+---
+
+# service: pinpoint-message-converter
+apiVersion: v1
+kind: Service
+metadata:
+  name: pinpoint-message-converter
+  namespace: pmc
+  labels:
+    app: pinpoint-message-converter
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: pinpoint-message-converter
+  type: ClusterIP
+---
+
+# deployment: pinpoint-message-converter
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pinpoint-message-converter
+  namespace: pmc
+spec:
+  selector:
+    matchLabels:
+      app: pinpoint-message-converter
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: pinpoint-message-converter
+    spec:
+      containers:
+        - name: pinpoint-message-converter
+          image: pinpoint-message-converter:3.1.0
+          # more args can be added to the command, to see the gunicorn command line options:
+          # https://docs.gunicorn.org/en/latest/configure.html#command-line
+          args:
+            - "--bind"
+            - "0.0.0.0:8080"
+            - "app:create()"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            # Logging level
+            - name: PMC_LOG_LEVEL
+              value: "DEBUG"
+            # Debug mode
+            - name: PMC_DEBUG
+              value: "true"
+            # Redis environment variables
+            - name: PMC_REDIS_HOST
+              value: "localhost"
+            - name: PMC_REDIS_PORT
+              value: "6379"
+            - name: PMC_REDIS_PASSWORD
+              value: ""
+            - name: PMC_REDIS_DB
+              value: "0"
+            # Server environment variables
+            - name: PMC_PORT
+              value: "8080"
+            # Trace environment variables
+            - name: PMC_TRACE_ID_KEY
+              value: "x-b3-traceid"

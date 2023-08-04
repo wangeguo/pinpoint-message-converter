@@ -15,18 +15,6 @@ from request import Request;
 import span
 import span_chunk
 
-from datakit_framework import DataKitFramework
-
-# Define a abstract class DataKitFramework for mock.
-# it's has a abstract method run() to do the real work.
-# and also has two attributes: name and interval.
-# class DataKitFramework:
-#     name = "DataKitFramework"
-#     interval = 10
-
-#     def run(self):
-#         pass
-
 # Setup logging level and format
 dictConfig({
     'version': 1,
@@ -39,32 +27,6 @@ debug_mode = os.getenv('PMC_DEBUG', True)
 
 # Create Flask application instance
 app = Flask(__name__)
-
-# extend DataKitFramework class and override run() method.
-class PinpointMessageConverter(DataKitFramework):
-    name = "PinpointMessageConverter"
-    interval = 10
-
-    def run(self):
-        try:
-            # Setup redis client to app context
-            app.logger.debug("Creating Redis client")
-            redis_host = os.getenv('PMC_REDIS_HOST', 'localhost')
-            redis_password = os.getenv('PMC_REDIS_PASSWORD', '')
-            redis_port = os.getenv('PMC_REDIS_PORT', 6379)
-            redis_db = os.getenv('PMC_REDIS_DB', 0)
-            redis = Redis(host=redis_host, port=redis_port,
-                            db=redis_db, password=redis_password,
-                            socket_connect_timeout=5, socket_timeout=5)
-
-            with app.app_context():
-                app.redis = redis
-
-            # Start flask server
-            app.run(host='0.0.0.0', port=os.getenv('PMC_PORT', 38064), debug=False)
-        except Exception as e:
-            redis.close()
-            app.logger.error("Run error: {} {}".format(str(e), traceback.format_exc()))
 
 # Handle http request
 @app.route("/", methods=['POST'])
@@ -111,6 +73,31 @@ def convert(redis: Redis, message: bytes) -> List[Point]:
     app.logger.debug(json.dumps(lines, cls=PointEncoder))
     return lines
 
-# Start PinpointMessageConverter for test.
+def create():
+    # Setup redis client to app context
+    app.logger.debug("Creating Redis client")
+    redis_host = os.getenv('PMC_REDIS_HOST', 'localhost')
+    redis_password = os.getenv('PMC_REDIS_PASSWORD', '')
+    redis_port = os.getenv('PMC_REDIS_PORT', 6379)
+    redis_db = os.getenv('PMC_REDIS_DB', 0)
+    redis = Redis(host=redis_host, port=redis_port,
+                    db=redis_db, password=redis_password,
+                    socket_connect_timeout=5, socket_timeout=5)
+
+    with app.app_context():
+        app.redis = redis
+
+    return app
+
+def main():
+    try:
+        # Create flask application instance
+        app = create()
+
+        # Start flask server
+        app.run(host='0.0.0.0', port=os.getenv('PMC_PORT', 8080), debug=False)
+    except Exception as e:
+        app.logger.error("Run error: {} {}".format(str(e), traceback.format_exc()))
+
 if __name__ == '__main__':
-    PinpointMessageConverter().run()
+    main()

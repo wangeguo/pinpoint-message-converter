@@ -1,10 +1,24 @@
 # Pinpoint Message Converter
 
-Pinpoint message converter, running in python.d mode, provides an HTTP service
-to the outside world, receiving raw data requests or bulk JSON lists, parsing
-and converting them into line protocols and returning them.
+Pinpoint message converter, provides an HTTP service to the outside world,
+receiving raw data requests or bulk JSON lists, parsing and converting them into
+line protocols and returning them.
 
-## Prerequisites
+## Quick Start
+
+You can run `build.sh` directly to build a Docker image and then run the `docker
+ run` command, or run `deploy.sh` to run on the Kubernetes platform.
+
+ ```
+ build.sh && deploy.sh
+ ```
+
+## Development
+
+If you want to perform the build or debug development locally, you need to
+install the appropriate dependencies as instructed below.
+
+### Prerequisites
 
 The Rust build environment needs to be pre-installed to compile the
 `pinpoint_parser` module, and the project runtime dependencies.
@@ -38,8 +52,6 @@ pip3 install -r requirements.txt \
     --trusted-host=pypi.douban.com/simple
 ```
 
-## Development
-
 ### 1. Build the `pinpoint_parser` module
 
 ```
@@ -47,30 +59,7 @@ cd pinpoint_parser/
 pip3 setup.py develop
 ```
 
-### 2. Setting up the runtime on python.d
-
-For development purposes, the DatakitFramework is simulated in main.py. When
-running in python.d mode, please import the real package and comment out the
-simulated code:
-
-a. Enable DatakitFramework imports
-
-```
-from datakit_framework import DataKitFramework
-```
-
-b. Comment out the mock DataKitFramework
-
-```
-# class DataKitFramework:
-#     name = "DataKitFramework"
-#     interval = 10
-#
-#     def run(self):
-#         pass
-```
-
-### 3. Configure Environment Variables
+### 2. Configure Environment Variables
 
 ```
 cp .env.sample .env
@@ -95,25 +84,38 @@ pytest -rP
 
 ## Deployment in production environments
 
-**First:**, go to the `pinpoint_parser/` directory and execute the following
-command to generate the .whl package:
+In production environments, it will run as a standalone Kubernetes Deployment
+and be exposed as a Service to provide standard HTTP services to the outside
+world.
+
+### 1. Run the build.sh script to build the Docker image
 
 ```
-cd pinpoint_parser/
-pip3 wheel .
+build.sh
 ```
 
-Then run the following command to install this extension in your production
-environment:
+### 2. Copy or Upload resources
+
+Upload the exported image package and k8s-testing.yaml to the Kubernetes host
+and modify the corresponding parameter values.
 
 ```
-pip3 install pinpoint_parser-xxx.whl
+cp pinpoint-message-converter-{version}.tar /path/to/target/
+cp k8s-testing.yaml /path/to/target/
 ```
 
-*Specific file names are based on the actual operating system and architecture*
+### 3. Import image tar to container runtime
 
-**Second:** Place the code for this project in the python.d directory of Datakit
-and configure the parameters for the kafka and python.d collectors.
+Execute the appropriate commands to import the image package to the Kubernetes
+nodes. The specific commands vary depending on the container engine.
+
+### 4. Finally, execute the following commands to deploy
+
+```
+kubectl apply -f k8s-testing.yaml
+```
+
+### 5. Configuring the Kafka Collector
 
 - Subscribe to Data in Kafka https://docs.guance.com/en/integrations/kafkamq/
 - Developing Custom Collector with Python
@@ -121,6 +123,3 @@ and configure the parameters for the kafka and python.d collectors.
 - python.d handler for kafka: (Gitlab):
   https://gitlab.jiagouyun.com/cloudcare-tools/datakit/-/issues/1797 or
   (Github): https://github.com/GuanceCloud/datakit/issues/21
-
-## Notes:
-Execute the `python3 -m site` command to get the path to the installed module.

@@ -1,7 +1,9 @@
 .pytest_cache
+.dockerignore
 .git
 .idea
 .venv
+Dockerfile*
 .vscode
 **/target
 *.tar
