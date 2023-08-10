@@ -10,8 +10,8 @@ def encode(parent: TSpan or TSpanChunk, event: TSpanEvent,
 
     # fields
     line.fields['trace_id'] = str(trace_id)
-    line.fields['span_id'] = random_id()
-    line.fields['parent_id'] = parent_id
+    line.fields['span_id'] = str(random_id())
+    line.fields['parent_id'] = str(parent_id)
     line.fields['start'] = (int(parent.agentStartTime) + int(event.startElapsed)) * 1000000
 
     duration = (int(event.startElapsed) + int(event.endElapsed)) * 1000000
@@ -49,6 +49,6 @@ def encode(parent: TSpan or TSpanChunk, event: TSpanEvent,
     for k, v in event.__dict__.items():
         line.tags[str(k)] = str(v)
 
-    line.timestamp = line.fields.get('start')
+    line.time = line.fields.get('start')
 
     return line

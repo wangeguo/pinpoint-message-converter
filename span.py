@@ -25,10 +25,10 @@ def encode(input: TSpan, trace_id: str) -> List[Point]:
 
     # fields
     root.fields['trace_id'] = str(trace_id)
-    root.fields['span_id'] = abs(int(input.spanId))
+    root.fields['span_id'] = str(abs(int(input.spanId)))
 
-    parent_id = 0 if input.parentSpanId < 0 else int(input.parentSpanId)
-    root.fields['parent_id'] = parent_id
+    parent_id = 0 if input.parentSpanId < 0 else input.parentSpanId
+    root.fields['parent_id'] = str(parent_id)
 
     root.fields['start'] = int(input.startTime) * 1000000
     root.fields['duration'] = int(input.elapsed) * 1000000
@@ -47,7 +47,7 @@ def encode(input: TSpan, trace_id: str) -> List[Point]:
     root.tags['transactionId'] = transaction_id
     root.tags['original_type'] = "Span"
 
-    root.timestamp = int(input.startTime) * 1000000
+    root.time = int(input.startTime) * 1000000
     lines.append(root)
 
     # span event list

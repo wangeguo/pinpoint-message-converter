@@ -52,6 +52,10 @@ def get_trace_id(input: TSpan or TSpanChunk, redis: Redis, key: str) -> str:
             if trace_id is not None:
                 redis.set(tid, str(trace_id))
 
+    # filter None, 'None', 'null' and ''
+    if trace_id is not None and trace_id.lower() in ['none', 'null', '']:
+        trace_id = None
+
     return trace_id if trace_id is not None else tid
 
 # check if the message is a span or span chunk

@@ -42,7 +42,7 @@ spec:
     spec:
       containers:
         - name: pinpoint-message-converter
-          image: pinpoint-message-converter:3.1.0
+          image: pinpoint-message-converter:3.1.1
           # more args can be added to the command, to see the gunicorn command line options:
           # https://docs.gunicorn.org/en/latest/configure.html#command-line
           args:
